@@ -1,0 +1,22 @@
+{
+  "name": "intellij-teams-integration-backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ulrich-barnstedt/intellij-teams-integration-backend.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/ulrich-barnstedt/intellij-teams-integration-backend/issues"
+  },
+  "homepage": "https://github.com/ulrich-barnstedt/intellij-teams-integration-backend#readme",
+  "dependencies": {
+    "puppeteer": "^13.5.1"
+  }
+}
