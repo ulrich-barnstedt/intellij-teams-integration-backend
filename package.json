@@ -17,6 +17,9 @@
   },
   "homepage": "https://github.com/ulrich-barnstedt/intellij-teams-integration-backend#readme",
   "dependencies": {
-    "puppeteer": "^13.5.1"
+    "adm-zip": "^0.5.9",
+    "glob-gitignore": "^1.0.14",
+    "puppeteer": "^13.5.1",
+    "simple-git": "^3.3.0"
   }
 }
