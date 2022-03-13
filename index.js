@@ -13,14 +13,20 @@ const args = {
 };
 
 (async () => {
+    console.log("Creating commit and pushing to remote ...");
     let gr = new GitRunner(args);
     //await gr.commitAndPush();
+    console.log("Successfully committed and pushed.");
 
+    console.log("Compressing project into zip ...");
     let zip = new ZipCompressor(args);
     await zip.compress();
+    console.log("Successfully compressed project.");
 
+    console.log("Opening browser for teams ...");
     let teams = new TeamsRunner(args);
     await teams.launch();
+    console.log("Successfully uploaded to teams.");
 })();
 
 
