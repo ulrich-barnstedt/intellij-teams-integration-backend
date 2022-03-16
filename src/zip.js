@@ -15,7 +15,7 @@ class ZipCompressor {
             dot : true,
             ignore : [
                 "*.class",
-                ".idea"
+                //".idea"
             ]
         });
 

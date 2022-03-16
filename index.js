@@ -24,17 +24,9 @@ const args = {
     console.log("Successfully compressed project.");
 
     console.log("Opening browser for teams ...");
-    let teams = new TeamsRunner(args);
+    let teams = new TeamsRunner(args, () => {
+        console.log("Successfully uploaded to teams.");
+        console.log("Exiting ...");
+    });
     await teams.launch();
-    console.log("Successfully uploaded to teams.");
 })();
-
-
-//steps:
-//git add
-//git commit
-//git push
-//zip
-//open teams
-//upload
-
