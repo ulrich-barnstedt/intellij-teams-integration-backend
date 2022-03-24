@@ -1,10 +1,31 @@
 const puppeteer = require("puppeteer");
 
-const assignmentSelector = `div[class^="assignment-card-grid__"]`;
-const openedAssigmentSelector = `div[class^="assignment-details-container__"]`;
+const selectors = {
+    assignment : {
+        grid : `div[class^="assignment-card-grid__"]`,
+        opened : `div[class^="assignment-details-container__"]`
+    },
+    upload : {
+        button : `button[data-test="attach-file"]`,
+        hiddenBox : "input[type=file]"
+    },
+    hyperlink : {
+        addButton : `button[data-test="hyperlink-tab"]`,
+        inputBox : `input[data-test="hyperlink-url"]`,
+        attachButton : `div[class^="footer-container__"]>button[data-test="primary-button"]`
+    }
+}
 
-const uploadButtonSelector = `button[data-test="attach-file"]`;
-const uploadFileHiddenBoxSelector = "input[type=file]";
+const frameIsAssignments = async (frame) => {
+    try {
+        let expected = await frame.$("html > head > title");
+        if (expected === null) return false;
+
+        return (await expected.evaluate(e => e.textContent)).includes("Assignments");
+    } catch (e) {
+        return false;
+    }
+}
 
 class Runner {
     constructor (args, done) {
@@ -53,18 +74,7 @@ class Runner {
     async #determineFrame () {
         this.#log("Determining frame ...");
 
-        this.assignmentFrame = await this.page.waitForFrame(async (frame) => {
-            try {
-                let expected = await frame.$("html > head > title");
-                if (expected === null) return false;
-
-                return (await expected.evaluate(e => e.textContent)).includes("Assignments");
-            } catch (e) {
-                return false;
-            }
-        }, {
-            timeout : 0
-        });
+        this.assignmentFrame = await this.page.waitForFrame(frameIsAssignments, { timeout : 0 });
 
         //select the current assigment after determining the frame
         await this.#selectAssignment();
@@ -72,10 +82,10 @@ class Runner {
 
     async #selectAssignment () {
         this.#log("Opening assignment ...");
-        await this.assignmentFrame.waitForSelector(assignmentSelector);
+        await this.assignmentFrame.waitForSelector(selectors.assignment.grid);
         await new Promise(resolve => setTimeout(resolve, 2000));
 
-        let assignments = await this.assignmentFrame.$$(assignmentSelector);
+        let assignments = await this.assignmentFrame.$$(selectors.assignment.grid);
         if (assignments.length === 0) await this.#error("Could not find any assignments");
 
         if (assignments.length === 1) {
@@ -105,31 +115,37 @@ class Runner {
         }
 
         await this.#uploadFiles();
+
         this.done();
+        //await this.browser.close();
     }
 
     async #uploadFiles () {
-        await this.assignmentFrame.waitForSelector(openedAssigmentSelector, {
+        await this.assignmentFrame.waitForSelector(selectors.assignment.opened, {
             timeout : 0
         });
 
         this.#log("Uploading files to assigment ...");
 
-        let button = await this.assignmentFrame.waitForSelector(uploadButtonSelector);
+        //upload the zip folder
+        let button = await this.assignmentFrame.waitForSelector(selectors.upload.button);
         await button.click();
+        await (await this.assignmentFrame.waitForSelector(selectors.upload.hiddenBox)).uploadFile(this.args.zipPath);
 
-        let hiddenUploadBox = await this.assignmentFrame.waitForSelector(uploadFileHiddenBoxSelector);
-        await hiddenUploadBox.uploadFile(this.args.zipPath);
+        //add the link
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        await button.click();
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await (await this.assignmentFrame.waitForSelector(selectors.hyperlink.addButton)).click();
 
+        let frame = await this.page.waitForFrame(frameIsAssignments);
+        let inputBox = await frame.waitForSelector(selectors.hyperlink.inputBox);
 
-
-        /*this.page.waitForFileChooser().then(async (fileChooser) => {
-            await fileChooser.accept(this.args.zipPath);
-            fs.unlinkSync(this.args.zipPath);
-        });*/
-
-        //let uploadFromDevice = await this.assignmentFrame.waitForSelector(uploadFromDeviceSelector);
-        //await uploadFromDevice.click();
+        await new Promise(resolve => setTimeout(resolve, 500));
+        await inputBox.click();
+        await inputBox.type(`https://bitbucket.org/htlpinkafeld/${this.args.userRepo}/src/main/POS3/${this.args.projectName}/`);
+        await new Promise(resolve => setTimeout(resolve, 1000));
+        await (await frame.waitForSelector(selectors.hyperlink.attachButton)).click();
     }
 }
 
