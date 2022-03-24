@@ -1,10 +1,10 @@
 const puppeteer = require("puppeteer");
-const fs = require("fs");
 
 const assignmentSelector = `div[class^="assignment-card-grid__"]`;
 const openedAssigmentSelector = `div[class^="assignment-details-container__"]`;
+
 const uploadButtonSelector = `button[data-test="attach-file"]`;
-const uploadFromDeviceSelector = `label[data-test="filePicker-tab"]`
+const uploadFileHiddenBoxSelector = "input[type=file]";
 
 class Runner {
     constructor (args, done) {
@@ -44,8 +44,6 @@ class Runner {
     }
 
     async #pageLoad () {
-        //await new Promise(resolve => setTimeout(resolve, 5000));
-
         if (this.page.url().slice(8).startsWith("teams.microsoft.com/_#/school") && !this.started) {
             this.started = true;
             await this.#determineFrame();
@@ -107,6 +105,7 @@ class Runner {
         }
 
         await this.#uploadFiles();
+        this.done();
     }
 
     async #uploadFiles () {
@@ -119,12 +118,18 @@ class Runner {
         let button = await this.assignmentFrame.waitForSelector(uploadButtonSelector);
         await button.click();
 
-        let uploadFromDevice = await this.assignmentFrame.waitForSelector(uploadFromDeviceSelector);
-        await uploadFromDevice.click();
+        let hiddenUploadBox = await this.assignmentFrame.waitForSelector(uploadFileHiddenBoxSelector);
+        await hiddenUploadBox.uploadFile(this.args.zipPath);
 
-        let fileChooser = await this.page.waitForFileChooser();
-        await fileChooser.accept(this.args.zipPath);
-        fs.unlinkSync(this.args.zipPath);
+
+
+        /*this.page.waitForFileChooser().then(async (fileChooser) => {
+            await fileChooser.accept(this.args.zipPath);
+            fs.unlinkSync(this.args.zipPath);
+        });*/
+
+        //let uploadFromDevice = await this.assignmentFrame.waitForSelector(uploadFromDeviceSelector);
+        //await uploadFromDevice.click();
     }
 }
 
