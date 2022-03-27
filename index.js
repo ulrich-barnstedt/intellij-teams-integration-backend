@@ -10,6 +10,7 @@ const args = {
     projectStatus : input[5],
     taskStatus : input[6],
     userRepo : input[7],
+    shouldSumbit : input[8],
     zipPath :`./temp/${input[4]}_${input[5]}.zip`
 };
 

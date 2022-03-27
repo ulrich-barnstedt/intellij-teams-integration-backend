@@ -1,6 +1,9 @@
 const puppeteer = require("puppeteer");
 
 const selectors = {
+    frame : {
+        isAssignment : "html > head > title"
+    },
     assignment : {
         grid : `div[class^="assignment-card-grid__"]`,
         opened : `div[class^="assignment-details-container__"]`
@@ -18,7 +21,7 @@ const selectors = {
 
 const frameIsAssignments = async (frame) => {
     try {
-        let expected = await frame.$("html > head > title");
+        let expected = await frame.$(selectors.frame.isAssignment);
         if (expected === null) return false;
 
         return (await expected.evaluate(e => e.textContent)).includes("Assignments");
@@ -37,12 +40,17 @@ class Runner {
 
     async #error (msg) {
         console.error(`ERROR: ${msg}`);
+
         await this.browser.close();
         process.exit(1);
     }
 
     #log (msg) {
         console.log(`[PPTR] ${msg}`);
+    }
+
+    #wait (ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
     }
 
     async launch () {
@@ -67,23 +75,19 @@ class Runner {
     async #pageLoad () {
         if (this.page.url().slice(8).startsWith("teams.microsoft.com/_#/school") && !this.started) {
             this.started = true;
-            await this.#determineFrame();
+            this.#log("Determining frame ...");
+
+            this.assignmentFrame = await this.page.waitForFrame(frameIsAssignments, { timeout : 0 });
+
+            //select the current assigment after determining the frame
+            await this.#selectAssignment();
         }
-    }
-
-    async #determineFrame () {
-        this.#log("Determining frame ...");
-
-        this.assignmentFrame = await this.page.waitForFrame(frameIsAssignments, { timeout : 0 });
-
-        //select the current assigment after determining the frame
-        await this.#selectAssignment();
     }
 
     async #selectAssignment () {
         this.#log("Opening assignment ...");
         await this.assignmentFrame.waitForSelector(selectors.assignment.grid);
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        await this.#wait(2000);
 
         let assignments = await this.assignmentFrame.$$(selectors.assignment.grid);
         if (assignments.length === 0) await this.#error("Could not find any assignments");
@@ -114,37 +118,51 @@ class Runner {
             }
         }
 
-        await this.#uploadFiles();
+        await this.#attach();
 
         this.done();
         //await this.browser.close();
     }
 
-    async #uploadFiles () {
+    async #attach () {
         await this.assignmentFrame.waitForSelector(selectors.assignment.opened, {
             timeout : 0
         });
 
+        this.#log("Removing original task status ...");
+
+        //fix word doc
+
         this.#log("Uploading files to assigment ...");
 
-        //upload the zip folder
-        let button = await this.assignmentFrame.waitForSelector(selectors.upload.button);
-        await button.click();
-        await (await this.assignmentFrame.waitForSelector(selectors.upload.hiddenBox)).uploadFile(this.args.zipPath);
+        this.assignmentUploadButton = await this.assignmentFrame.waitForSelector(selectors.upload.button);
 
-        //add the link
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        await button.click();
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await this.#uploadFile(this.args.zipPath);
+        await this.#wait(2000);
+
+        await this.#addLinkToTask();
+        await this.#wait(500);
+
+        //submit if checkbox is triggered
+    }
+
+    async #uploadFile (path) {
+        await this.assignmentUploadButton.click();
+        await (await this.assignmentFrame.waitForSelector(selectors.upload.hiddenBox)).uploadFile(path);
+    }
+
+    async #addLinkToTask () {
+        await this.assignmentUploadButton.click();
+        await this.#wait(500);
         await (await this.assignmentFrame.waitForSelector(selectors.hyperlink.addButton)).click();
 
         let frame = await this.page.waitForFrame(frameIsAssignments);
         let inputBox = await frame.waitForSelector(selectors.hyperlink.inputBox);
 
-        await new Promise(resolve => setTimeout(resolve, 500));
+        await this.#wait(500);
         await inputBox.click();
         await inputBox.type(`https://bitbucket.org/htlpinkafeld/${this.args.userRepo}/src/main/POS3/${this.args.projectName}/`);
-        await new Promise(resolve => setTimeout(resolve, 1000));
+        await this.#wait(500);
         await (await frame.waitForSelector(selectors.hyperlink.attachButton)).click();
     }
 }
