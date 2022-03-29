@@ -17,7 +17,7 @@ const args = {
 (async () => {
     console.log("Creating commit and pushing to remote ...");
     let gr = new GitRunner(args);
-    //await gr.commitAndPush();
+    await gr.commitAndPush();
     console.log("Successfully committed and pushed.");
 
     console.log("Compressing project into zip ...");

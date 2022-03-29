@@ -66,8 +66,8 @@ class Runner {
 
         //launch browser
         this.browser = await puppeteer.launch({
-            headless: false,
-            userDataDir: "./.cookies",
+            headless : false,
+            userDataDir : "./.cookies",
             args : ["--disable-notifications"]
         });
         this.page = await this.browser.newPage();

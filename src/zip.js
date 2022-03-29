@@ -13,10 +13,7 @@ class ZipCompressor {
             cwd : this.args.projectDir,
             nodir : true,
             dot : true,
-            ignore : [
-                "*.class",
-                //".idea"
-            ]
+            ignore : [ "*.class" ]
         });
 
         for (let file of files) {
