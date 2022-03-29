@@ -183,10 +183,9 @@ class Runner {
         await this.page.keyboard.type(this.args.taskStatus);
 
         await this.#wait(5000);
-        this.page.goBack({
-            timeout : 0,
-            waitUntil : []
-        });
+        try {
+            this.page.goBack();
+        } catch (e) {}
         await this.#wait(1000);
     }
 
