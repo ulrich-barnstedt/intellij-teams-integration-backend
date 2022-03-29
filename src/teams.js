@@ -19,16 +19,14 @@ const selectors = {
     },
     taskDocument : {
         open : `button[data-test="attachment"]`,
-        text : ".NormalTextRun"
+    },
+    submit : {
+        button : `button[data-test="turn-in-button"]`
     }
 }
 
 const frameCheck = title => {
     return async (frame) => {
-        if (title === "Word") {
-            console.log(await frame.content());
-        }
-
         try {
             let expected = await frame.$(selectors.frame.isAssignment);
             if (expected === null) return false;
@@ -131,8 +129,12 @@ class Runner {
 
         await this.#attach();
 
+        this.#log("Submitting assignment ... ");
+        await this.#submit();
+
+        await this.#wait(500);
         this.done();
-        //await this.browser.close();
+        await this.browser.close();
     }
 
     async #attach () {
@@ -145,15 +147,10 @@ class Runner {
 
         this.#log("Uploading files to assigment ...");
         this.assignmentUploadButton = await this.assignmentFrame.waitForSelector(selectors.upload.button);
-
         await this.#uploadFile(this.args.zipPath);
         await this.#wait(2000);
-
         await this.#addLinkToTask();
         await this.#wait(500);
-
-        this.#log("Submitting assignment ... ");
-        await this.#submit();
     }
 
     async #uploadFile (path) {
@@ -178,45 +175,25 @@ class Runner {
 
     async #fixDocument () {
         await (await this.assignmentFrame.waitForSelector(selectors.taskDocument.open)).click();
-
-        /*let frames = [];
-        this.page.on("frameattached", (f) => {
-            frames.push(f);
-        })
-
-        await this.#wait(5000);
-        this.page.removeAllListeners("frameattached");
-        let doc = frames.filter((e) => !e.isDetached());
-
-        console.log(doc);
-
-        return;*/
-
-        //let doc = await this.page.waitForFrame(frameCheck("Word"));
-        /*let doc = await new Promise(resolve => this.page.once("frameattached", () => {
-            this.page.once("frameattached", resolve);
-        }));*/
-
-        //console.log(await doc.content());
-
-        //await doc.waitForSelector(selectors.taskDocument.text);
-
         await this.#wait(10000);
 
-        //for (let i = 0; i < 2; i++) await this.page.keyboard.press("ArrowDown");
-        //for (let i = 0; i < 16; i++) await this.page.keyboard.press("ArrowLeft");
-        //for (let i = 0; i < 15; i++) await this.page.keyboard.press("Backspace");
-        //await this.page.keyboard.type(this.args.taskStatus);
+        for (let i = 0; i < 2; i++) await this.page.keyboard.press("ArrowDown");
+        for (let i = 0; i < 16; i++) await this.page.keyboard.press("ArrowLeft");
+        for (let i = 0; i < 15; i++) await this.page.keyboard.press("Backspace");
+        await this.page.keyboard.type(this.args.taskStatus);
 
         await this.#wait(5000);
         this.page.goBack({
-            timeout : 0
+            timeout : 0,
+            waitUntil : []
         });
         await this.#wait(1000);
     }
 
     async #submit() {
-
+        if (this.args.shouldSumbit === "true") {
+            await (await this.assignmentFrame.waitForSelector(selectors.submit.button)).click();
+        }
     }
 }
 
