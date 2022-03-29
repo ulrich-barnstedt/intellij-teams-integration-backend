@@ -1,4 +1,5 @@
 const puppeteer = require("puppeteer");
+const fs = require("fs");
 
 const selectors = {
     frame : {
@@ -147,8 +148,13 @@ class Runner {
 
         this.#log("Uploading files to assigment ...");
         this.assignmentUploadButton = await this.assignmentFrame.waitForSelector(selectors.upload.button);
+
         await this.#uploadFile(this.args.zipPath);
         await this.#wait(2000);
+        this.#wait(10000).then(() => {
+            fs.unlinkSync(this.args.zipPath);
+        })
+
         await this.#addLinkToTask();
         await this.#wait(500);
     }

@@ -11,7 +11,7 @@ const args = {
     taskStatus : input[6],
     userRepo : input[7],
     shouldSumbit : input[8],
-    zipPath :`./temp/${input[4]}_${input[5]}.zip`
+    zipPath :`./temp/${input[4]}.zip`
 };
 
 (async () => {
