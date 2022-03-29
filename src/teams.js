@@ -181,7 +181,7 @@ class Runner {
 
     async #fixDocument () {
         await (await this.assignmentFrame.waitForSelector(selectors.taskDocument.open)).click();
-        await this.#wait(15000);
+        await this.#wait(20000);
 
         for (let i = 0; i < 2; i++) await this.page.keyboard.press("ArrowDown");
         for (let i = 0; i < 16; i++) await this.page.keyboard.press("ArrowLeft");
