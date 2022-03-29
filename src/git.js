@@ -16,7 +16,8 @@ class GitRunner {
     }
 
     async #add () {
-        await this.gitInstance.add(".");
+        await this.gitInstance.reset("mixed");
+        await this.gitInstance.add(this.args.projectDir + "/\*");
     }
 
     async #commit () {
