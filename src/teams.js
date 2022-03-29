@@ -16,17 +16,27 @@ const selectors = {
         addButton : `button[data-test="hyperlink-tab"]`,
         inputBox : `input[data-test="hyperlink-url"]`,
         attachButton : `div[class^="footer-container__"]>button[data-test="primary-button"]`
+    },
+    taskDocument : {
+        open : `button[data-test="attachment"]`,
+        text : ".NormalTextRun"
     }
 }
 
-const frameIsAssignments = async (frame) => {
-    try {
-        let expected = await frame.$(selectors.frame.isAssignment);
-        if (expected === null) return false;
+const frameCheck = title => {
+    return async (frame) => {
+        if (title === "Word") {
+            console.log(await frame.content());
+        }
 
-        return (await expected.evaluate(e => e.textContent)).includes("Assignments");
-    } catch (e) {
-        return false;
+        try {
+            let expected = await frame.$(selectors.frame.isAssignment);
+            if (expected === null) return false;
+
+            return (await expected.evaluate(e => e.textContent)).includes(title);
+        } catch (e) {
+            return false;
+        }
     }
 }
 
@@ -59,7 +69,8 @@ class Runner {
         //launch browser
         this.browser = await puppeteer.launch({
             headless: false,
-            userDataDir: "./.cookies"
+            userDataDir: "./.cookies",
+            args : ["--disable-notifications"]
         });
         this.page = await this.browser.newPage();
 
@@ -77,7 +88,7 @@ class Runner {
             this.started = true;
             this.#log("Determining frame ...");
 
-            this.assignmentFrame = await this.page.waitForFrame(frameIsAssignments, { timeout : 0 });
+            this.assignmentFrame = await this.page.waitForFrame(frameCheck("Assignments"), { timeout : 0 });
 
             //select the current assigment after determining the frame
             await this.#selectAssignment();
@@ -129,12 +140,10 @@ class Runner {
             timeout : 0
         });
 
-        this.#log("Removing original task status ...");
-
-        //fix word doc
+        this.#log("Fixing task status document ...");
+        await this.#fixDocument();
 
         this.#log("Uploading files to assigment ...");
-
         this.assignmentUploadButton = await this.assignmentFrame.waitForSelector(selectors.upload.button);
 
         await this.#uploadFile(this.args.zipPath);
@@ -143,7 +152,8 @@ class Runner {
         await this.#addLinkToTask();
         await this.#wait(500);
 
-        //submit if checkbox is triggered
+        this.#log("Submitting assignment ... ");
+        await this.#submit();
     }
 
     async #uploadFile (path) {
@@ -156,14 +166,57 @@ class Runner {
         await this.#wait(500);
         await (await this.assignmentFrame.waitForSelector(selectors.hyperlink.addButton)).click();
 
-        let frame = await this.page.waitForFrame(frameIsAssignments);
+        let frame = await this.page.waitForFrame(frameCheck("Assignments"));
         let inputBox = await frame.waitForSelector(selectors.hyperlink.inputBox);
 
         await this.#wait(500);
         await inputBox.click();
-        await inputBox.type(`https://bitbucket.org/htlpinkafeld/${this.args.userRepo}/src/main/POS3/${this.args.projectName}/`);
+        await inputBox.type(`https://bitbucket.org/htlpinkafeld/${this.args.userRepo}/${this.args.projectName}/`);
         await this.#wait(500);
         await (await frame.waitForSelector(selectors.hyperlink.attachButton)).click();
+    }
+
+    async #fixDocument () {
+        await (await this.assignmentFrame.waitForSelector(selectors.taskDocument.open)).click();
+
+        /*let frames = [];
+        this.page.on("frameattached", (f) => {
+            frames.push(f);
+        })
+
+        await this.#wait(5000);
+        this.page.removeAllListeners("frameattached");
+        let doc = frames.filter((e) => !e.isDetached());
+
+        console.log(doc);
+
+        return;*/
+
+        //let doc = await this.page.waitForFrame(frameCheck("Word"));
+        /*let doc = await new Promise(resolve => this.page.once("frameattached", () => {
+            this.page.once("frameattached", resolve);
+        }));*/
+
+        //console.log(await doc.content());
+
+        //await doc.waitForSelector(selectors.taskDocument.text);
+
+        await this.#wait(10000);
+
+        //for (let i = 0; i < 2; i++) await this.page.keyboard.press("ArrowDown");
+        //for (let i = 0; i < 16; i++) await this.page.keyboard.press("ArrowLeft");
+        //for (let i = 0; i < 15; i++) await this.page.keyboard.press("Backspace");
+        //await this.page.keyboard.type(this.args.taskStatus);
+
+        await this.#wait(5000);
+        this.page.goBack({
+            timeout : 0
+        });
+        await this.#wait(1000);
+    }
+
+    async #submit() {
+
     }
 }
 
